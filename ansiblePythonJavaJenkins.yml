@@ -1,0 +1,44 @@
+---
+- hosts: amazon
+  become: yes
+  gather_facts: no
+  pre_tasks:
+  - name: 'run apt-get'
+    raw: 'sudo apt-get update'
+  - name: 'install python'
+    raw: 'sudo apt-get -y install python'
+
+  gather_facts: true
+  tasks:
+    - name: install Python apt
+      apt:
+        name=python-apt
+        update_cache=yes
+        state=latest
+    - name: install open jdk java
+      apt:
+        name=openjdk-8-jdk
+        update_cache=yes
+        state=latest
+    - name: add apt key for Jenkins
+      ansible.builtin.apt_key:
+        url=https://pkg.jenkins.io/debian-stable/jenkins.io.key
+        state=present
+    - name: copy Jenkins listfile with Jenkins update location
+      template:
+        src: jenkins.list
+        dest: /etc/apt/sources.list.d/
+        owner: root
+        group: root
+        mode: 0644
+    - name: Update apt packages
+      become: true
+      apt:
+        update_cache: yes
+    - name: install Jenkins
+      apt:
+        name=jenkins
+        update_cache=yes
+        state=latest
+    - name: Start Jenkins to make the plugin data available
+      service: name=jenkins state=restarted
